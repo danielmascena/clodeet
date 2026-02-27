@@ -1,23 +1,57 @@
-const https = require('https');
+import { request } from "node:https";
+import { writeFile } from 'node:fs/promises';
 
-const req = https.request({
+const mapProgExt = {
+  'javascript': 'js',
+  'typescript': 'ts',
+  'python': 'py',
+  'java': 'java',
+  'ruby': 'rb',
+  'php': 'php',
+  'kotlin': 'kt',
+  'cpp': 'cpp',
+}
+var progLanguage = process.argv[2] || 'javascript';
+
+const req = request({
   hostname: 'leetcode.com',   // just the domain, no protocol
   path: '/graphql',           // path goes here
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   }
-}, res => {
+}, async res => {
   let data = '';
-  res.on('data', chunk => data += chunk);
-  res.on('end', () => {
-    const { data: { activeDailyCodingChallengeQuestion: { question } } } = JSON.parse(data);
-    console.log(question);
-  });
+
+  console.log(`Status: ${res.statusCode}`);
+  console.log(`Headers: ${res.headers}`);
+
+  if (res.statusCode === 200) {
+
+    for await (const chunk of res) {
+      data += chunk;
+    }
+  }
+  try {
+    const { data: { activeDailyCodingChallengeQuestion: { question: { title, titleSlug, codeSnippets, exampleTestcases } } } } = JSON.parse(data);
+    console.log(title);
+    console.log(codeSnippets)
+    console.log(exampleTestcases)
+
+    for (const { langSlug, code } of codeSnippets) {
+      if (langSlug === progLanguage) {
+        writeFile(`./${titleSlug}.${mapProgExt[progLanguage]}`, code).catch((console.error));
+        writeFile(`./${titleSlug}.txt`, exampleTestcases).catch(console.error);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to parse the response/JSON', e);
+    console.error(data.slice(0, 500))
+  }
 });
 
 req.write(JSON.stringify({
-  query: `{ activeDailyCodingChallengeQuestion { question { title codeSnippets { lang langSlug code } } } }`
+  query: `{ activeDailyCodingChallengeQuestion { question { title titleSlug codeSnippets { lang langSlug code } difficulty content topicTags { name } exampleTestcases } } }`
 }));
 
 req.end();
