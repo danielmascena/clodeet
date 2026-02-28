@@ -33,7 +33,7 @@ const req = request({
     }
   }
   try {
-    const { data: { activeDailyCodingChallengeQuestion: { question: { title, titleSlug, codeSnippets, exampleTestcases } } } } = JSON.parse(data);
+    const { data: { activeDailyCodingChallengeQuestion: { question: { title, titleSlug, codeSnippets, exampleTestcases, content, difficulty } } } } = JSON.parse(data);
     console.log(title);
     console.log(codeSnippets)
     console.log(exampleTestcases)
@@ -42,6 +42,20 @@ const req = request({
       if (langSlug === progLanguage) {
         writeFile(`./${titleSlug}.${mapProgExt[progLanguage]}`, code).catch((console.error));
         writeFile(`./${titleSlug}.txt`, exampleTestcases).catch(console.error);
+        writeFile(`./${titleSlug}-description.html`, `
+          <head>
+            <title>Leetcode daily problem</title>
+          <head>
+          <body>
+            <header>
+              <h1>${title}</h1>
+            </header>
+            <main>
+              <p>${difficulty}</p>
+              ${content}
+            </main>
+          </body>`)
+          .catch(console.error);
       }
     }
   } catch (e) {
