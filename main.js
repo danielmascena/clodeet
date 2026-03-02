@@ -1,5 +1,7 @@
+#!/usr/bin/env node
+
 import { request } from "node:https";
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 
 const mapProgExt = {
   'javascript': 'js',
@@ -40,22 +42,29 @@ const req = request({
 
     for (const { langSlug, code } of codeSnippets) {
       if (langSlug === progLanguage) {
-        writeFile(`./${titleSlug}.${mapProgExt[progLanguage]}`, code).catch((console.error));
-        writeFile(`./${titleSlug}.txt`, exampleTestcases).catch(console.error);
-        writeFile(`./${titleSlug}-description.html`, `
-          <head>
-            <title>Leetcode daily problem</title>
-          <head>
-          <body>
-            <header>
-              <h1>${title}</h1>
-            </header>
-            <main>
-              <p>${difficulty}</p>
-              ${content}
-            </main>
-          </body>`)
-          .catch(console.error);
+        try {
+          const dir = titleSlug.slice(0, 10);
+          await mkdir(dir);
+          await writeFile(`${dir}/code.${mapProgExt[progLanguage]}`, code);
+          await writeFile(`./${dir}/testcases.txt`, exampleTestcases);
+          await writeFile(`./${dir}/description.html`,
+            `
+              <head>
+                <title>Leetcode daily problem</title>
+              <head>
+              <body>
+                <header>
+                  <h1>${title}</h1>
+                </header>
+                <main>
+                  <p>${difficulty}</p>
+                  ${content}
+                </main>
+              </body>`
+          );
+        } catch (e) {
+          console.error("Some error occurred during the file/directory creation", e);
+        }
       }
     }
   } catch (e) {
